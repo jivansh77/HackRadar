@@ -2,6 +2,9 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from celery import Celery
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from app.models.hackathon import HackathonModel
 from app.scrapers.unstop_scraper import scrape_unstop

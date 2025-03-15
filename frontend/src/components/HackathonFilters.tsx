@@ -9,9 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default function HackathonFilters() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [location, setLocation] = useState("");
-  const [source, setSource] = useState("");
-  const [dateRange, setDateRange] = useState("");
+  const [location, setLocation] = useState("all-locations");
+  const [source, setSource] = useState("all-platforms");
+  const [dateRange, setDateRange] = useState("any-time");
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,9 +23,9 @@ export default function HackathonFilters() {
   
   const handleReset = () => {
     setSearchTerm("");
-    setLocation("");
-    setSource("");
-    setDateRange("");
+    setLocation("all-locations");
+    setSource("all-platforms");
+    setDateRange("any-time");
   };
   
   return (
@@ -52,7 +52,7 @@ export default function HackathonFilters() {
                 <SelectValue placeholder="Select location" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Locations</SelectItem>
+                <SelectItem value="all-locations">All Locations</SelectItem>
                 <SelectItem value="Mumbai">Mumbai</SelectItem>
                 <SelectItem value="Delhi">Delhi</SelectItem>
                 <SelectItem value="Bangalore">Bangalore</SelectItem>
@@ -68,7 +68,7 @@ export default function HackathonFilters() {
                 <SelectValue placeholder="Select platform" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Platforms</SelectItem>
+                <SelectItem value="all-platforms">All Platforms</SelectItem>
                 <SelectItem value="Unstop">Unstop</SelectItem>
                 <SelectItem value="Devfolio">Devfolio</SelectItem>
                 <SelectItem value="Devpost">Devpost</SelectItem>
@@ -83,7 +83,7 @@ export default function HackathonFilters() {
                 <SelectValue placeholder="Select date range" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Any Time</SelectItem>
+                <SelectItem value="any-time">Any Time</SelectItem>
                 <SelectItem value="upcoming">Upcoming</SelectItem>
                 <SelectItem value="this-week">This Week</SelectItem>
                 <SelectItem value="this-month">This Month</SelectItem>

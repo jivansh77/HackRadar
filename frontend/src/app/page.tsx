@@ -7,7 +7,7 @@ export default function Home() {
     <main className="min-h-screen bg-gray-50">
       <div className="container mx-auto py-8 px-4">
         <header className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Hackathon Aggregator</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">HackRadar</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Discover upcoming hackathons from Unstop, Devfolio, and Devpost all in one place.
             Get real-time updates and never miss an opportunity!
