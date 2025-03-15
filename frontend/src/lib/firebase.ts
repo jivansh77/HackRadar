@@ -1,5 +1,5 @@
-import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { initializeApp, FirebaseApp } from 'firebase/app';
+import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -12,8 +12,8 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-let firebaseApp;
-let messaging;
+let firebaseApp: FirebaseApp;
+let messaging: Messaging;
 
 // Only initialize Firebase on the client side
 if (typeof window !== 'undefined') {
@@ -68,7 +68,7 @@ export const requestNotificationPermission = async () => {
 };
 
 // Handle foreground messages
-export const onForegroundMessage = (callback) => {
+export const onForegroundMessage = (callback: (payload: any) => void) => {
   if (!messaging) {
     console.error('Firebase messaging is not initialized');
     return;
