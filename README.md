@@ -1,4 +1,4 @@
-# Hackathon Aggregator
+# HackRadar
 
 A web application that aggregates upcoming hackathons from multiple platforms (Unstop, Devfolio, and Devpost) and displays them in real-time. The website focuses on hackathons in Mumbai but also includes national-level hackathons. Users receive push notifications when new hackathons are added.
 
