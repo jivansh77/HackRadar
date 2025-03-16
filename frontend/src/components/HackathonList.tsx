@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
+import { FilterState } from "./HackathonFilters";
 
 // Define the Hackathon type
 interface Hackathon {
@@ -19,10 +21,16 @@ interface Hackathon {
   image_url: string | null;
 }
 
-export default function HackathonList() {
+interface HackathonListProps {
+  filters?: FilterState;
+}
+
+export default function HackathonList({ filters }: HackathonListProps) {
   const [hackathons, setHackathons] = useState<Hackathon[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const searchParams = useSearchParams();
   
   // Fetch hackathons from the API
   useEffect(() => {
@@ -54,6 +62,105 @@ export default function HackathonList() {
     
     fetchHackathons();
   }, []);
+  
+  // Apply filters to hackathons
+  const filteredHackathons = useMemo(() => {
+    // Get filters from props or URL params
+    const searchTerm = filters?.searchTerm || searchParams?.get("search") || "";
+    const location = filters?.location || searchParams?.get("location") || "all-locations";
+    const source = filters?.source || searchParams?.get("source") || "all-platforms";
+    const dateRange = filters?.dateRange || searchParams?.get("dateRange") || "any-time";
+    
+    // Debug output for Unstop hackathons - only log when we actually have data
+    if (hackathons.length > 0) {
+      const unstopHackathons = hackathons.filter(h => h.source === "Unstop");
+      
+      // Only log if we have Unstop hackathons or this is the first time we're seeing data
+      if (unstopHackathons.length > 0) {
+        console.log(`Total Unstop hackathons: ${unstopHackathons.length}`);
+        console.log(`Unstop hackathons with dates in the future: ${
+          unstopHackathons.filter(h => h.start_date && new Date(h.start_date) > new Date()).length
+        }`);
+        console.log(`Unstop hackathons with dates in the past: ${
+          unstopHackathons.filter(h => h.start_date && new Date(h.start_date) <= new Date()).length
+        }`);
+        console.log(`Current filter settings - Source: ${source}, DateRange: ${dateRange}, Location: ${location}`);
+      }
+    }
+    
+    return hackathons.filter(hackathon => {
+      // Filter by search term
+      if (searchTerm && !hackathon.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+          !(hackathon.description && hackathon.description.toLowerCase().includes(searchTerm.toLowerCase()))) {
+        return false;
+      }
+      
+      // Filter by location
+      if (location !== "all-locations" && hackathon.location !== location) {
+        // Special handling for "Online | City" format
+        if (location === "Online" && hackathon.location?.startsWith("Online |")) {
+          // Allow "Online" filter to show "Online | City" events
+          return true;
+        } else if (location !== "Online" && hackathon.location?.includes(location)) {
+          // For city filters like "Mumbai", show both "Mumbai" and "Online | Mumbai"
+          return true;
+        }
+        return false;
+      }
+      
+      // Filter by source
+      if (source !== "all-platforms" && hackathon.source !== source) {
+        return false;
+      }
+      
+      // Filter by date range - with improved logic
+      if (dateRange !== "any-time" && hackathon.start_date) {
+        const today = new Date();
+        const startDate = new Date(hackathon.start_date);
+        
+        // Upcoming: future events
+        if (dateRange === "upcoming" && startDate <= today) {
+          return false;
+        }
+        
+        // Past events: only show events that have already happened
+        if (dateRange === "past-events" && startDate > today) {
+          return false;
+        }
+        
+        // This week
+        if (dateRange === "this-week") {
+          const endOfWeek = new Date();
+          endOfWeek.setDate(today.getDate() + (7 - today.getDay()));
+          
+          if (startDate < today || startDate > endOfWeek) {
+            return false;
+          }
+        }
+        
+        // This month
+        if (dateRange === "this-month") {
+          const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+          
+          if (startDate < today || startDate > endOfMonth) {
+            return false;
+          }
+        }
+        
+        // Next month
+        if (dateRange === "next-month") {
+          const startOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+          const endOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+          
+          if (startDate < startOfNextMonth || startDate > endOfNextMonth) {
+            return false;
+          }
+        }
+      }
+      
+      return true;
+    });
+  }, [hackathons, filters, searchParams]);
   
   // Format date for display
   const formatDate = (dateString: string | null) => {
@@ -105,28 +212,20 @@ export default function HackathonList() {
     );
   }
   
-  if (hackathons.length === 0) {
+  if (filteredHackathons.length === 0) {
     return (
       <div className="text-center p-8 bg-gray-50 rounded-lg">
         <h3 className="text-xl font-semibold text-gray-800 mb-2">No Hackathons Found</h3>
-        <p className="text-gray-600">Check back later for upcoming hackathons.</p>
+        <p className="text-gray-600">Try adjusting your filters or check back later for upcoming hackathons.</p>
       </div>
     );
   }
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-      {hackathons.map((hackathon) => (
+      {filteredHackathons.map((hackathon) => (
         <Card key={hackathon.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-          {hackathon.image_url && (
-            <div className="h-48 overflow-hidden">
-              <img 
-                src={hackathon.image_url} 
-                alt={hackathon.name} 
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
+          {/* Image display removed */}
           
           <CardHeader>
             <div className="flex justify-between items-start">

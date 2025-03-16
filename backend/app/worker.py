@@ -29,7 +29,7 @@ celery_app.conf.update(
     beat_schedule={
         "scrape-hackathons-every-hour": {
             "task": "app.services.hackathon_service.scrape_all_sources",
-            "schedule": 3600.0,  # Every hour
+            "schedule": 7200.0,  # Every 2 hours
         },
     },
 )

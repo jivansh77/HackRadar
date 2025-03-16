@@ -48,9 +48,9 @@ def scrape_all_sources():
     Celery task to scrape all hackathon sources.
     """
     # Scrape from all sources
-    unstop_hackathons = scrape_unstop()
-    devfolio_hackathons = scrape_devfolio()
-    devpost_hackathons = scrape_devpost()
+    unstop_hackathons = scrape_unstop() or []
+    devfolio_hackathons = scrape_devfolio() or []
+    devpost_hackathons = scrape_devpost() or []
     
     # Combine all new hackathons
     all_new_hackathons = unstop_hackathons + devfolio_hackathons + devpost_hackathons

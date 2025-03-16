@@ -20,7 +20,7 @@ try:
 except Exception as e:
     logger.error(f"Error initializing Firebase Admin SDK: {str(e)}")
 
-def send_notification(title: str, body: str, topic: str = "new_hackathons"):
+def send_notification(title: str, body: str, topic: str = "new_hackathons", data: Dict[str, str] = None):
     """
     Send a notification to all users subscribed to a topic.
     
@@ -28,6 +28,7 @@ def send_notification(title: str, body: str, topic: str = "new_hackathons"):
         title: Notification title
         body: Notification body
         topic: Topic to send notification to (default: "new_hackathons")
+        data: Additional data to send with the notification
     
     Returns:
         bool: True if notification was sent successfully, False otherwise
@@ -37,12 +38,53 @@ def send_notification(title: str, body: str, topic: str = "new_hackathons"):
             logger.warning("Firebase Admin SDK not initialized. Cannot send notification.")
             return False
         
-        # Create message
-        message = messaging.Message(
-            notification=messaging.Notification(
+        # Create notification
+        notification = messaging.Notification(
+            title=title,
+            body=body,
+        )
+        
+        # Create Android specific notification config
+        android_config = messaging.AndroidConfig(
+            priority='high',
+            notification=messaging.AndroidNotification(
+                icon='notification_icon',
+                color='#4CAF50',
+                sound='default'
+            ),
+        )
+        
+        # Create APNS (Apple) specific config
+        apns_config = messaging.APNSConfig(
+            payload=messaging.APNSPayload(
+                aps=messaging.Aps(
+                    alert=messaging.ApsAlert(
+                        title=title,
+                        body=body,
+                    ),
+                    sound='default',
+                    badge=1,
+                ),
+            ),
+        )
+        
+        # Create web specific config - without the problematic link option
+        webpush_config = messaging.WebpushConfig(
+            notification=messaging.WebpushNotification(
                 title=title,
                 body=body,
+                icon='/logo2.png',
             ),
+            # Removed the fcm_options with link that required HTTPS
+        )
+        
+        # Create message with all configs
+        message = messaging.Message(
+            notification=notification,
+            android=android_config,
+            apns=apns_config,
+            webpush=webpush_config,
+            data=data or {},
             topic=topic,
         )
         
@@ -57,7 +99,7 @@ def send_notification(title: str, body: str, topic: str = "new_hackathons"):
 
 def notify_new_hackathons(hackathons: List[Dict[str, Any]]):
     """
-    Send notifications for new hackathons.
+    Send notifications for new hackathons in Mumbai.
     
     Args:
         hackathons: List of new hackathon dictionaries
@@ -65,17 +107,31 @@ def notify_new_hackathons(hackathons: List[Dict[str, Any]]):
     if not hackathons:
         return
     
-    # Send a notification for each new hackathon
-    for hackathon in hackathons:
-        title = f"New Hackathon: {hackathon['name']}"
-        body = f"A new hackathon has been added from {hackathon['source']}."
-        if hackathon.get('location'):
-            body += f" Location: {hackathon['location']}."
-        
-        send_notification(title, body)
+    # Filter hackathons to only include those in Mumbai
+    mumbai_hackathons = [h for h in hackathons if h.get('location') and 'Mumbai' in h.get('location')]
     
-    # Send a summary notification if there are multiple hackathons
-    if len(hackathons) > 1:
-        title = f"{len(hackathons)} New Hackathons Added"
-        body = f"Check out {len(hackathons)} new hackathons that were just added!"
-        send_notification(title, body) 
+    if not mumbai_hackathons:
+        logger.info("No Mumbai hackathons to send notifications for.")
+        return
+    
+    # Send a notification for each new Mumbai hackathon
+    for hackathon in mumbai_hackathons:
+        title = f"New Mumbai Hackathon: {hackathon['name']}"
+        body = f"A new hackathon in Mumbai has been added from {hackathon['source']}."
+        data = {
+            "hackathon_id": str(hackathon.get('id', '')),
+            "source": hackathon.get('source', ''),
+            "url": hackathon.get('url', ''),
+        }
+        
+        send_notification(title, body, "mumbai_hackathons", data)
+    
+    # Send a summary notification if there are multiple Mumbai hackathons
+    if len(mumbai_hackathons) > 1:
+        title = f"{len(mumbai_hackathons)} New Mumbai Hackathons Added"
+        body = f"Check out {len(mumbai_hackathons)} new hackathons in Mumbai that were just added!"
+        data = {
+            "count": str(len(mumbai_hackathons)),
+            "type": "summary"
+        }
+        send_notification(title, body, "mumbai_hackathons", data) 
