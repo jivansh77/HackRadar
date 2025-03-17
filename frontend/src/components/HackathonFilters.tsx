@@ -154,7 +154,17 @@ function ClientFilters({ onFilterChange }: HackathonFiltersProps) {
               id="search"
               placeholder="Search hackathons..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                const newSearchTerm = e.target.value;
+                setSearchTerm(newSearchTerm);
+                // Apply filters immediately when user types
+                applyFilters({
+                  searchTerm: newSearchTerm,
+                  location,
+                  source,
+                  dateRange
+                });
+              }}
             />
           </div>
           
