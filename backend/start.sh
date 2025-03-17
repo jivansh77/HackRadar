@@ -19,7 +19,7 @@ PORT=${PORT:-8000}
 
 # Start Celery worker in the background
 echo "Starting Celery worker..."
-celery -A app.worker worker --loglevel=WARNING --without-heartbeat --without-gossip --without-mingle &
+celery -A app.worker worker --loglevel=WARNING --without-heartbeat --without-gossip --without-mingle --concurrency=2 --max-memory-per-child=50000 &
 CELERY_WORKER_PID=$!
 
 # Start Celery beat in the background (only if you need scheduling)
@@ -27,15 +27,29 @@ echo "Starting Celery beat scheduler..."
 celery -A app.worker beat --loglevel=WARNING --max-interval=3600 &
 CELERY_BEAT_PID=$!
 
+# Add memory monitoring to log when system is running low on memory
+echo "Setting up memory monitoring..."
+(
+  while true; do
+    # Get free memory in KB
+    free_mem=$(free -m | awk 'NR==2{print $4}')
+    if [ $free_mem -lt 100 ]; then
+      echo "WARNING: Low memory - only ${free_mem}MB free"
+    fi
+    sleep 60
+  done
+) &
+MEMORY_MONITOR_PID=$!
+
 # Start FastAPI server
 echo "Starting FastAPI server on port $PORT..."
-uvicorn app.main:app --host 0.0.0.0 --port $PORT &
+uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --limit-concurrency 20 --timeout-keep-alive 30 &
 API_PID=$!
 
 # Handle shutdown signals
 function handle_sigterm() {
   echo "Received shutdown signal, stopping all processes..."
-  kill $CELERY_WORKER_PID $CELERY_BEAT_PID $API_PID 2>/dev/null || true
+  kill $CELERY_WORKER_PID $CELERY_BEAT_PID $API_PID $MEMORY_MONITOR_PID 2>/dev/null || true
   wait
   echo "All processes stopped"
   exit 0
@@ -45,7 +59,7 @@ function handle_sigterm() {
 function check_processes() {
   if ! kill -0 $CELERY_WORKER_PID 2>/dev/null; then
     echo "Celery worker process died, restarting..."
-    celery -A app.worker worker --loglevel=WARNING --without-heartbeat --without-gossip --without-mingle &
+    celery -A app.worker worker --loglevel=WARNING --without-heartbeat --without-gossip --without-mingle --concurrency=2 --max-memory-per-child=50000 &
     CELERY_WORKER_PID=$!
   fi
   
@@ -57,7 +71,7 @@ function check_processes() {
   
   if ! kill -0 $API_PID 2>/dev/null; then
     echo "API process died, restarting..."
-    uvicorn app.main:app --host 0.0.0.0 --port $PORT &
+    uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --limit-concurrency 20 --timeout-keep-alive 30 &
     API_PID=$!
   fi
 }

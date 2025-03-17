@@ -71,6 +71,15 @@ celery_config = {
     'enable_utc': True,
     'worker_hijack_root_logger': False,  # Don't hijack the root logger
     'worker_redirect_stdouts': False,    # Don't redirect stdout/stderr
+    # Memory optimization settings
+    'worker_max_tasks_per_child': 10,    # Restart worker after 10 tasks to prevent memory leaks
+    'worker_prefetch_multiplier': 1,     # Only prefetch one task at a time to conserve memory
+    'task_acks_late': True,              # Acknowledge task after it has been executed
+    'task_time_limit': 600,              # 10 minute time limit per task
+    'task_soft_time_limit': 300,         # 5 minute soft time limit
+    'broker_connection_retry': True,     # Retry broker connection
+    'broker_connection_retry_on_startup': True,  # Retry broker connections on startup
+    'broker_connection_max_retries': 10, # Maximum number of retries
     # Prevent beat from restarting processes
     'beat_max_loop_interval': 3600,      # 1 hour max interval instead of 5 minutes
     'beat_scheduler': 'celery.beat.PersistentScheduler',
