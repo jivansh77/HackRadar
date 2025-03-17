@@ -19,7 +19,7 @@ A web application that aggregates upcoming hackathons from multiple platforms (U
 
 ### Backend
 - **Framework**: FastAPI (Python)
-- **Web Scraping**: BeautifulSoup, Selenium
+- **Web Scraping**: BeautifulSoup
 - **Database**: PostgreSQL
 - **Task Scheduler**: Celery with Redis
 

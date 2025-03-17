@@ -11,6 +11,9 @@ from app.models.hackathon import HackathonModel
 
 logger = logging.getLogger(__name__)
 
+# Set the logger to only show INFO and higher for this module
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+
 def scrape_devpost() -> List[Dict[str, Any]]:
     """
     Fetch hackathon data from Devpost's JSON API endpoint with pagination.
@@ -41,7 +44,7 @@ def scrape_devpost() -> List[Dict[str, Any]]:
                 # Use the paginated API endpoint for subsequent pages
                 url = f"https://devpost.com/api/hackathons?page={page}&status[]=upcoming&status[]=open"
             
-            logger.info(f"Fetching page {page} from Devpost API")
+            logger.info(f"Fetching Devpost page {page}...")
             
             # Make the request
             response = requests.get(url, headers=headers)
@@ -55,7 +58,7 @@ def scrape_devpost() -> List[Dict[str, Any]]:
             
             if not page_hackathons:
                 # No more hackathons, exit the loop
-                logger.info(f"No hackathons found on page {page}, stopping pagination")
+                logger.info(f"No more hackathons found on page {page}")
                 break
                 
             # Add this page's hackathons to our collection
@@ -69,7 +72,7 @@ def scrape_devpost() -> List[Dict[str, Any]]:
                 
                 if total_count > 0 and per_page > 0:
                     total_pages = math.ceil(total_count / per_page)
-                    logger.info(f"Total hackathons: {total_count}, Per page: {per_page}, Total pages: {total_pages}")
+                    logger.info(f"Found {total_count} total hackathons across {total_pages} pages")
                 else:
                     # If we can't determine total pages, just fetch one page
                     logger.warning("Could not determine total pages, will only fetch current page")
@@ -77,10 +80,11 @@ def scrape_devpost() -> List[Dict[str, Any]]:
             
             page += 1
         
-        logger.info(f"Fetched {len(all_hackathons_data)} hackathons from Devpost")
+        logger.info(f"Successfully fetched data for {len(all_hackathons_data)} hackathons from Devpost")
         
         # Process all hackathons
         hackathons = []
+        new_count = 0
         
         for hackathon_data in all_hackathons_data:
             try:
@@ -183,9 +187,9 @@ def scrape_devpost() -> List[Dict[str, Any]]:
                                         start_date = datetime.strptime(start_date_str, "%b %d, %Y")
                                         end_date = datetime.strptime(end_date_str, "%b %d, %Y")
                                     else:
-                                        logger.warning(f"Unexpected start date format: {start_part}")
+                                        logger.debug(f"Unexpected start date format: {start_part}")
                                 else:
-                                    logger.warning(f"End date missing year: {end_part}")
+                                    logger.debug(f"End date missing year: {end_part}")
                             
                             # Case: "Mar 15 - Apr 16, 2025" (different months)
                             else:
@@ -208,10 +212,10 @@ def scrape_devpost() -> List[Dict[str, Any]]:
                             end_date = parsed_date  # Same day event
                         
                         else:
-                            logger.warning(f"Unexpected date format: {submission_dates}")
+                            logger.debug(f"Unexpected date format: {submission_dates}")
                             
                     except Exception as e:
-                        logger.warning(f"Failed to parse submission dates: {submission_dates}")
+                        logger.debug(f"Failed to parse submission dates: {submission_dates}")
                 
                 # Extract image URL and convert to absolute URL if needed
                 image_url = hackathon_data.get("thumbnail_url")
@@ -252,11 +256,17 @@ def scrape_devpost() -> List[Dict[str, Any]]:
                     db.add(db_hackathon)
                     db.commit()
                     hackathons.append(hackathon)
+                    new_count += 1
                 
             except Exception as e:
                 logger.error(f"Error processing hackathon data: {str(e)}")
                 continue
         
+        if new_count > 0:
+            logger.info(f"Added {new_count} new hackathons from Devpost to the database")
+        else:
+            logger.info("No new hackathons from Devpost to add")
+            
         return hackathons
         
     except Exception as e:

@@ -3,8 +3,22 @@ from typing import List, Optional
 from celery import Celery
 import os
 from dotenv import load_dotenv
+import logging
+from ssl import CERT_NONE
 
+# Load environment variables first
 load_dotenv()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+# Reduce verbosity of other loggers
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+logging.getLogger("celery").setLevel(logging.WARNING)
 
 from app.models.hackathon import HackathonModel
 from app.scrapers.unstop_scraper import scrape_unstop
@@ -12,9 +26,8 @@ from app.scrapers.devfolio_scraper import scrape_devfolio
 from app.scrapers.devpost_scraper import scrape_devpost
 from app.services.notification_service import notify_new_hackathons
 
-# Celery configuration
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-celery_app = Celery("hackathon_tasks", broker=REDIS_URL)
+# Celery configuration - import the app instance from worker.py
+from app.worker import celery_app
 
 def get_hackathons(
     db: Session, 
@@ -36,32 +49,50 @@ def get_hackathons(
     
     return query.order_by(HackathonModel.start_date.desc()).offset(skip).limit(limit).all()
 
-def trigger_scraping():
-    """
-    Trigger the scraping task asynchronously using Celery.
-    """
-    scrape_all_sources.delay()
-
-@celery_app.task
+@celery_app.task(name="app.services.hackathon_service.scrape_all_sources")
 def scrape_all_sources():
     """
     Celery task to scrape all hackathon sources.
     """
+    logger.info("┌─── Starting hackathon scraping process ───┐")
+    
     # Scrape from all sources
+    logger.info("├── Fetching hackathons from Unstop...")
     unstop_hackathons = scrape_unstop() or []
+    logger.info(f"├── Found {len(unstop_hackathons)} new hackathons from Unstop")
+    
+    logger.info("├── Fetching hackathons from Devfolio...")
     devfolio_hackathons = scrape_devfolio() or []
+    logger.info(f"├── Found {len(devfolio_hackathons)} new hackathons from Devfolio")
+    
+    logger.info("├── Fetching hackathons from Devpost...")
     devpost_hackathons = scrape_devpost() or []
+    logger.info(f"├── Found {len(devpost_hackathons)} new hackathons from Devpost")
     
     # Combine all new hackathons
     all_new_hackathons = unstop_hackathons + devfolio_hackathons + devpost_hackathons
     
     # Send notifications for new hackathons
     if all_new_hackathons:
+        logger.info(f"├── Sending notifications for {len(all_new_hackathons)} new hackathons")
         notify_new_hackathons(all_new_hackathons)
+    else:
+        logger.info("├── No new hackathons found, skipping notifications")
+    
+    logger.info("└─── Hackathon scraping process completed ───┘")
     
     return {
         "unstop": len(unstop_hackathons),
         "devfolio": len(devfolio_hackathons),
         "devpost": len(devpost_hackathons),
         "total_new": len(all_new_hackathons)
-    } 
+    }
+
+def trigger_scraping():
+    """
+    Trigger the scraping task asynchronously using Celery.
+    """
+    logger.info("Triggering scraping task via Celery...")
+    result = scrape_all_sources.delay()
+    logger.info(f"Scraping task triggered with ID: {result.id}")
+    return result.id 

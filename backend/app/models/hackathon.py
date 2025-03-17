@@ -9,6 +9,7 @@ from app.db.database import Base
 # SQLAlchemy ORM model
 class HackathonModel(Base):
     __tablename__ = "hackathons"
+    __table_args__ = {"schema": "public"}  # Explicitly set schema
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
