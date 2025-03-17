@@ -104,6 +104,7 @@ def test_database_connection():
     import datetime
     from app.db.database import SessionLocal
     from app.models.hackathon import HackathonModel
+    from app.services.notification_service import notify_new_hackathons
     
     # Create a unique test hackathon
     test_id = uuid.uuid4().hex[:8]
@@ -121,7 +122,7 @@ def test_database_connection():
             description="This is a test hackathon to verify database connectivity",
             start_date=datetime.datetime.now(),
             end_date=datetime.datetime.now() + datetime.timedelta(days=1),
-            location="Test Location",
+            location="Mumbai",
             registration_link=f"https://example.com/test-{test_id}",
             source="Test",
             image_url="https://example.com/image.jpg"
@@ -134,6 +135,20 @@ def test_database_connection():
         # Count hackathons after adding
         count_after = db.query(HackathonModel).count()
         logger.info(f"Database test successful! Added test hackathon (before: {count_before}, after: {count_after})")
+        
+        # Convert to dict format for the notification service
+        test_hackathon_dict = {
+            'id': test_hackathon.id,
+            'name': test_hackathon.name,
+            'description': test_hackathon.description,
+            'location': test_hackathon.location,
+            'source': test_hackathon.source,
+            'url': test_hackathon.registration_link
+        }
+        
+        # Send notification for the test hackathon
+        logger.info("Sending test notification...")
+        notify_new_hackathons([test_hackathon_dict])
         
     except Exception as e:
         logger.error(f"Database test failed: {str(e)}")

@@ -21,8 +21,7 @@ export interface FilterState {
 
 // Client component that doesn't directly use useSearchParams
 export default function HackathonFilters({ onFilterChange }: HackathonFiltersProps) {
-  const FiltersContent = ClientFilters({ onFilterChange });
-  return FiltersContent;
+  return <ClientFilters onFilterChange={onFilterChange} />;
 }
 
 // The actual client component with filter logic
