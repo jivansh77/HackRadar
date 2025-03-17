@@ -74,7 +74,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Request permission and get FCM token
-export const requestNotificationPermission = async (_userId: string) => {
+export const requestNotificationPermission = async () => {
   try {
     if (!messaging) {
       console.error('Firebase messaging is not initialized');

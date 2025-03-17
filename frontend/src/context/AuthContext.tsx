@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (user) {
         toast.success('Signed in successfully!');
         // After successful sign-in, request notification permissions
-        requestNotificationPermission(user.uid)
+        requestNotificationPermission()
           .then((token) => {
             if (token) {
               toast.success('Notifications enabled!');
@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const token = await requestNotificationPermission(user.uid);
+      const token = await requestNotificationPermission();
       if (token) {
         toast.success('Notifications enabled!');
       } else {
