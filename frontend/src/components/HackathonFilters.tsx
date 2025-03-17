@@ -19,7 +19,14 @@ export interface FilterState {
   dateRange: string;
 }
 
+// Client component that doesn't directly use useSearchParams
 export default function HackathonFilters({ onFilterChange }: HackathonFiltersProps) {
+  const FiltersContent = ClientFilters({ onFilterChange });
+  return FiltersContent;
+}
+
+// The actual client component with filter logic
+function ClientFilters({ onFilterChange }: HackathonFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isInitialMount = useRef(true);
@@ -65,6 +72,39 @@ export default function HackathonFilters({ onFilterChange }: HackathonFiltersPro
       location: "all-locations",
       source: "all-platforms",
       dateRange: "any-time"
+    });
+  };
+
+  const handleLocationChange = (value: string) => {
+    setLocation(value);
+    // Apply filters immediately for better UX
+    applyFilters({
+      searchTerm,
+      location: value,
+      source,
+      dateRange
+    });
+  };
+
+  const handleSourceChange = (value: string) => {
+    setSource(value);
+    // Apply filters immediately for better UX
+    applyFilters({
+      searchTerm,
+      location,
+      source: value,
+      dateRange
+    });
+  };
+
+  const handleDateRangeChange = (value: string) => {
+    setDateRange(value);
+    // Apply filters immediately for better UX
+    applyFilters({
+      searchTerm,
+      location,
+      source,
+      dateRange: value
     });
   };
   
@@ -121,7 +161,7 @@ export default function HackathonFilters({ onFilterChange }: HackathonFiltersPro
           
           <div className="space-y-2">
             <Label htmlFor="location">Location</Label>
-            <Select value={location} onValueChange={setLocation}>
+            <Select value={location} onValueChange={handleLocationChange}>
               <SelectTrigger id="location">
                 <SelectValue placeholder="Select location" />
               </SelectTrigger>
@@ -137,7 +177,7 @@ export default function HackathonFilters({ onFilterChange }: HackathonFiltersPro
           
           <div className="space-y-2">
             <Label htmlFor="source">Platform</Label>
-            <Select value={source} onValueChange={setSource}>
+            <Select value={source} onValueChange={handleSourceChange}>
               <SelectTrigger id="source">
                 <SelectValue placeholder="Select platform" />
               </SelectTrigger>
@@ -152,7 +192,7 @@ export default function HackathonFilters({ onFilterChange }: HackathonFiltersPro
           
           <div className="space-y-2">
             <Label htmlFor="dateRange">Date Range</Label>
-            <Select value={dateRange} onValueChange={setDateRange}>
+            <Select value={dateRange} onValueChange={handleDateRangeChange}>
               <SelectTrigger id="dateRange">
                 <SelectValue placeholder="Select date range" />
               </SelectTrigger>

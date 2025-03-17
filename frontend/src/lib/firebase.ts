@@ -144,13 +144,11 @@ export const requestNotificationPermission = async () => {
 // Subscribe to a topic
 export const subscribeToTopic = async (token: string, topic: string) => {
   try {
-    // In a real implementation, your backend would handle this
-    // This is just a placeholder - you'll need to implement a backend API endpoint for this
     console.log(`Subscribing token ${token} to topic ${topic}`);
     
-    // Call your backend API to subscribe
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-    const response = await fetch(`${apiUrl}/notifications/subscribe`, {
+    // Use our Next.js API route instead of calling the backend directly
+    // This avoids CORS issues
+    const response = await fetch(`/api/notifications/subscribe`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
