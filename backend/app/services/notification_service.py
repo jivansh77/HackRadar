@@ -2,23 +2,61 @@ import firebase_admin
 from firebase_admin import credentials, messaging
 import logging
 import os
+import base64
+import json
+from pathlib import Path
 from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
-# Path to Firebase service account key file
-FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH", "firebase-credentials.json")
+# Initialize Firebase with credentials from environment variables
+def initialize_firebase():
+    """Initialize Firebase Admin SDK with credentials from environment variables."""
+    try:
+        # First, check for base64 encoded credentials
+        firebase_credentials_base64 = os.getenv("FIREBASE_CREDENTIALS_BASE64")
+        if firebase_credentials_base64:
+            logger.info("Found base64 encoded Firebase credentials in environment variables")
+            try:
+                # Decode base64 string to bytes
+                firebase_credentials_json = base64.b64decode(firebase_credentials_base64)
+                
+                # Create credentials directory if it doesn't exist
+                credentials_dir = Path("./credentials")
+                credentials_dir.mkdir(exist_ok=True)
+                
+                # Write credentials to file
+                credentials_path = credentials_dir / "firebase-credentials.json"
+                with open(credentials_path, "wb") as f:
+                    f.write(firebase_credentials_json)
+                
+                # Initialize Firebase with the created file
+                cred = credentials.Certificate(str(credentials_path))
+                firebase_admin.initialize_app(cred)
+                logger.info("Firebase Admin SDK initialized successfully with base64 credentials")
+                return True
+            except Exception as e:
+                logger.error(f"Error initializing Firebase with base64 credentials: {str(e)}")
+        
+        # Fall back to direct file path method
+        firebase_credentials_path = os.getenv("FIREBASE_CREDENTIALS_PATH", "firebase-credentials.json")
+        if os.path.exists(firebase_credentials_path):
+            cred = credentials.Certificate(firebase_credentials_path)
+            firebase_admin.initialize_app(cred)
+            logger.info("Firebase Admin SDK initialized successfully with credentials file")
+            return True
+        else:
+            logger.warning(f"Firebase credentials file not found at {firebase_credentials_path}. Notifications will not work.")
+            return False
+    except Exception as e:
+        logger.error(f"Error initializing Firebase Admin SDK: {str(e)}")
+        return False
 
-# Initialize Firebase Admin SDK
+# Initialize Firebase on module import
 try:
-    if os.path.exists(FIREBASE_CREDENTIALS_PATH):
-        cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
-        firebase_admin.initialize_app(cred)
-        logger.info("Firebase Admin SDK initialized successfully.")
-    else:
-        logger.warning(f"Firebase credentials file not found at {FIREBASE_CREDENTIALS_PATH}. Notifications will not work.")
+    initialize_firebase()
 except Exception as e:
-    logger.error(f"Error initializing Firebase Admin SDK: {str(e)}")
+    logger.error(f"Failed to initialize Firebase: {str(e)}")
 
 def send_notification(title: str, body: str, topic: str = "new_hackathons", data: Dict[str, str] = None):
     """
