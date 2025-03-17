@@ -16,8 +16,8 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 # Define allowed origins based on environment
 allowed_origins = [
     "http://localhost:3000",                   # Local development
-    "https://hackradar.vercel.app",            # Production Vercel deployment
-    "https://find-hackathon.vercel.app",       # Alternative production URL
+    "https://hack-radar.vercel.app",            # Production Vercel deployment
+    "https://hack-radar-git-main-jivansh77s-projects.vercel.app",    # Alternative URL
     "https://www.hackradar.app",               # Custom domain if used
 ]
 
