@@ -30,11 +30,30 @@ broker_ssl_options = None
 if REDIS_URL and 'upstash.io' in REDIS_URL:
     if os.environ.get("SHOW_STARTUP_LOGS", "true").lower() == "true":
         logger.info("Setting up Upstash Redis SSL configuration")
-    # For Upstash, we need specific SSL configuration
+    # For Upstash, use proper certificate validation
     broker_ssl_options = {
-        'ssl_cert_reqs': CERT_NONE,
-        'ssl_ca_certs': None,
+        'ssl_cert_reqs': CERT_REQUIRED,
+        'ssl_ca_certs': None,  # Let the system use the default CA certificates
     }
+    
+    # Try to use system CA certificates if available
+    system_ca_paths = [
+        '/etc/ssl/certs/ca-certificates.crt',  # Debian/Ubuntu
+        '/etc/pki/tls/certs/ca-bundle.crt',    # RHEL/CentOS
+        '/etc/ssl/ca-bundle.pem',              # OpenSUSE
+        '/usr/local/etc/openssl/cert.pem',     # macOS Homebrew
+        '/etc/ssl/cert.pem',                   # macOS/Alpine
+    ]
+    
+    for path in system_ca_paths:
+        if os.path.exists(path):
+            broker_ssl_options['ssl_ca_certs'] = path
+            if os.environ.get("SHOW_STARTUP_LOGS", "true").lower() == "true":
+                logger.info(f"Using CA certificates from: {path}")
+            break
+    
+    if broker_ssl_options['ssl_ca_certs'] is None:
+        logger.warning("Could not find system CA certificates. Will rely on default behavior.")
 
 # Create Celery app - explicitly set broker and specify backend as Redis
 celery_app = Celery(
@@ -52,6 +71,9 @@ celery_config = {
     'enable_utc': True,
     'worker_hijack_root_logger': False,  # Don't hijack the root logger
     'worker_redirect_stdouts': False,    # Don't redirect stdout/stderr
+    # Prevent beat from restarting processes
+    'beat_max_loop_interval': 3600,      # 1 hour max interval instead of 5 minutes
+    'beat_scheduler': 'celery.beat.PersistentScheduler',
     # Schedule periodic tasks
     'beat_schedule': {
         'scrape-hackathons-every-24-hours': {
