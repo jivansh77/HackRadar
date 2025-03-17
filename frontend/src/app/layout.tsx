@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
 import UserProfile from "@/components/UserProfile";
+import Image from "next/image";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,7 +28,7 @@ export default function RootLayout({
           <header className="border-b py-4">
             <div className="container flex justify-between items-center mx-auto px-4">
               <div className="flex items-center gap-2">
-                <img src="/logo2.png" alt="HackRadar" className="w-10 h-10" />
+                <Image src="/logo2.png" alt="HackRadar" width={40} height={40} />
                 <h1 className="text-xl font-bold">HackRadar</h1>
               </div>
               <UserProfile />

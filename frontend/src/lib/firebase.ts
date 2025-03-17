@@ -1,5 +1,5 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
-import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
+import { getMessaging, getToken, onMessage, Messaging, MessagePayload } from 'firebase/messaging';
 import { 
   getAuth, 
   GoogleAuthProvider, 
@@ -74,7 +74,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Request permission and get FCM token
-export const requestNotificationPermission = async (userId: string) => {
+export const requestNotificationPermission = async (_userId: string) => {
   try {
     if (!messaging) {
       console.error('Firebase messaging is not initialized');
@@ -173,7 +173,7 @@ export const subscribeToTopic = async (token: string, topic: string) => {
 };
 
 // Handle foreground messages
-export const onForegroundMessage = (callback: (payload: any) => void) => {
+export const onForegroundMessage = (callback: (payload: MessagePayload) => void) => {
   if (!messaging) {
     console.error('Firebase messaging is not initialized');
     return;

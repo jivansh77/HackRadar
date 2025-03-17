@@ -100,7 +100,7 @@ export default function HackathonFilters({ onFilterChange }: HackathonFiltersPro
     if (source !== sourceParam) setSource(sourceParam);
     if (dateRange !== dateRangeParam) setDateRange(dateRangeParam);
     
-  }, [searchParams]);
+  }, [searchParams, searchTerm, location, source, dateRange, onFilterChange]);
   
   return (
     <Card>

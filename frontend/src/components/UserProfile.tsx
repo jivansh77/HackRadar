@@ -16,6 +16,9 @@ export default function UserProfile() {
   const { user, loading, signOut, enableNotifications } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [displayName, setDisplayName] = useState('');
+  const [photoURL, setPhotoURL] = useState('');
   
   // Check if notifications are enabled on component mount
   useEffect(() => {
@@ -46,9 +49,9 @@ export default function UserProfile() {
       setNotificationsEnabled(true);
       // Show success notification
       console.log("Notifications enabled successfully");
-    } catch (error) {
+    } catch (err) {
       // Show error notification
-      console.error("Error enabling notifications");
+      console.error("Error enabling notifications:", err);
     }
   };
 
