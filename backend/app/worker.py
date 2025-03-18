@@ -81,13 +81,14 @@ celery_config = {
     'broker_connection_retry_on_startup': True,  # Retry broker connections on startup
     'broker_connection_max_retries': 10, # Maximum number of retries
     # Prevent beat from restarting processes
-    'beat_max_loop_interval': 3600,      # 1 hour max interval instead of 5 minutes
+    'beat_max_loop_interval': 300,      # 5 minutes max interval instead of 1 hour
     'beat_scheduler': 'celery.beat.PersistentScheduler',
     # Schedule periodic tasks
     'beat_schedule': {
         'scrape-hackathons-every-24-hours': {
             'task': 'app.services.hackathon_service.scrape_all_sources',
             'schedule': 86400.0,  # Every 24 hours
+            'options': {'expires': 86400 * 2}  # Task expires after 48 hours
         },
     },
     # Important: include modules with tasks to ensure they're found

@@ -85,7 +85,7 @@ def scrape_devfolio() -> List[Dict[str, Any]]:
         db = SessionLocal()
         
         # URL for Devfolio hackathons JSON data
-        url = "https://devfolio.co/_next/data/uw5JQ6xpZ9nB5NukThGXa/hackathons.json"
+        url = "https://devfolio.co/_next/data/ObFEjkvFPq_YDM3M0Od-x/hackathons.json"
         
         # Make request to the API endpoint
         response = requests.get(url)

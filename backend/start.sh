@@ -24,7 +24,8 @@ CELERY_WORKER_PID=$!
 
 # Start Celery beat in the background (only if you need scheduling)
 echo "Starting Celery beat scheduler..."
-celery -A app.worker beat --loglevel=WARNING --max-interval=3600 &
+mkdir -p ./beat_storage
+celery -A app.worker beat --loglevel=INFO --max-interval=300 --scheduler=celery.beat.PersistentScheduler --schedule=./beat_storage/celerybeat-schedule &
 CELERY_BEAT_PID=$!
 
 # Add memory monitoring to log when system is running low on memory
@@ -65,7 +66,7 @@ function check_processes() {
   
   if ! kill -0 $CELERY_BEAT_PID 2>/dev/null; then
     echo "Celery beat process died, restarting..."
-    celery -A app.worker beat --loglevel=WARNING --max-interval=3600 &
+    celery -A app.worker beat --loglevel=INFO --max-interval=300 --scheduler=celery.beat.PersistentScheduler --schedule=./beat_storage/celerybeat-schedule &
     CELERY_BEAT_PID=$!
   fi
   
@@ -78,9 +79,9 @@ function check_processes() {
 
 trap handle_sigterm SIGINT SIGTERM
 
-# Keep the script running and check processes every minute
+# Keep the script running and check processes every 3 minutes
 echo "All services started - backend is ready"
 while true; do
   check_processes
-  sleep 60
+  sleep 180
 done 
