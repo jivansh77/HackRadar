@@ -5,9 +5,11 @@ from pydantic import BaseModel
 
 from app.db.database import get_db
 from app.models.hackathon import Hackathon
-from app.services.hackathon_service import get_hackathons, trigger_scraping
+from app.services.hackathon_service import get_hackathons, trigger_scraping, SCRAPE_TASK_NAME
+from app.services.last_run_service import get_last_run, update_last_run
 from app.services.notification_service import send_notification
 from firebase_admin import messaging
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
@@ -47,6 +49,45 @@ async def scrape_hackathons():
     Trigger manual scraping of hackathon data from all sources.
     This is an asynchronous operation.
     """
+    # Get the last run time
+    last_run = get_last_run(SCRAPE_TASK_NAME)
+    
     # Start the scraping task
-    trigger_scraping()
-    return {"message": "Scraping task started"}
+    task_id = trigger_scraping()
+    
+    response = {
+        "message": "Scraping task started",
+        "task_id": task_id,
+        "last_run": last_run.isoformat() if last_run else None,
+    }
+    
+    # If we have a last run time, include the next scheduled run
+    if last_run:
+        next_scheduled = last_run + timedelta(hours=24)
+        response["next_scheduled_run"] = next_scheduled.isoformat()
+    
+    return response
+
+@router.get("/scrape/status", status_code=200)
+async def get_scrape_status():
+    """
+    Get information about the last scraping run and when the next one is scheduled.
+    """
+    last_run = get_last_run(SCRAPE_TASK_NAME)
+    
+    if not last_run:
+        return {
+            "last_run": None,
+            "next_scheduled_run": None,
+            "message": "No scraping has been performed yet"
+        }
+    
+    next_scheduled = last_run + timedelta(hours=24)
+    now = datetime.utcnow()
+    
+    return {
+        "last_run": last_run.isoformat(),
+        "next_scheduled_run": next_scheduled.isoformat(),
+        "time_since_last_run": str(now - last_run).split('.')[0],  # Remove microseconds
+        "time_until_next_run": str(next_scheduled - now).split('.')[0] if next_scheduled > now else "Overdue",
+    }

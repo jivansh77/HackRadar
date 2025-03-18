@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router as api_router
 import os
+import logging
+from app.services.hackathon_service import check_and_run_scraping_if_needed
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="HackRadar API",
@@ -42,6 +47,20 @@ async def root():
         "environment": ENV,
         "allowed_origins": allowed_origins,
     }
+
+# Add startup event to check for scraping tasks
+@app.on_event("startup")
+async def startup_event():
+    """
+    Runs when the FastAPI app starts up.
+    Check if we need to run the scraping task and run it if needed.
+    """
+    logger.info("Checking if hackathon scraping is needed on startup...")
+    task_id = check_and_run_scraping_if_needed()
+    if task_id:
+        logger.info(f"Scraping task started with ID: {task_id}")
+    else:
+        logger.info("No scraping needed at startup")
 
 if __name__ == "__main__":
     import uvicorn

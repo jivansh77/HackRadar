@@ -5,10 +5,15 @@ set -e
 # Load environment variables
 source ./.env 2>/dev/null || true
 
-# Create credentials directory and extract Firebase credentials
+# Create directories we need
+echo "Setting up required directories..."
+mkdir -p ./credentials
+mkdir -p ./storage
+mkdir -p ./beat_storage
+
+# Create Firebase credentials directory and extract Firebase credentials
 if [ -n "$FIREBASE_CREDENTIALS_BASE64" ]; then
   echo "Setting up Firebase credentials from base64 environment variable"
-  mkdir -p ./credentials
   echo $FIREBASE_CREDENTIALS_BASE64 | base64 --decode > ./credentials/firebase-credentials.json
   export FIREBASE_CREDENTIALS_PATH="./credentials/firebase-credentials.json"
   echo "Firebase credentials saved to $FIREBASE_CREDENTIALS_PATH"
@@ -24,7 +29,6 @@ CELERY_WORKER_PID=$!
 
 # Start Celery beat in the background (only if you need scheduling)
 echo "Starting Celery beat scheduler..."
-mkdir -p ./beat_storage
 celery -A app.worker beat --loglevel=INFO --max-interval=300 --scheduler=celery.beat.PersistentScheduler --schedule=./beat_storage/celerybeat-schedule &
 CELERY_BEAT_PID=$!
 

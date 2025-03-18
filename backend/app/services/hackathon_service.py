@@ -25,9 +25,14 @@ from app.scrapers.unstop_scraper import scrape_unstop
 from app.scrapers.devfolio_scraper import scrape_devfolio
 from app.scrapers.devpost_scraper import scrape_devpost
 from app.services.notification_service import notify_new_hackathons
+from app.services.last_run_service import update_last_run, should_run_task
 
 # Celery configuration - import the app instance from worker.py
 from app.worker import celery_app
+
+# Constants
+SCRAPE_TASK_NAME = "hackathon_scraping"
+SCRAPE_INTERVAL_HOURS = 24
 
 def get_hackathons(
     db: Session, 
@@ -81,6 +86,9 @@ def scrape_all_sources():
     
     logger.info("└─── Hackathon scraping process completed ───┘")
     
+    # Update the last run time
+    update_last_run(SCRAPE_TASK_NAME)
+    
     return {
         "unstop": len(unstop_hackathons),
         "devfolio": len(devfolio_hackathons),
@@ -95,4 +103,16 @@ def trigger_scraping():
     logger.info("Triggering scraping task via Celery...")
     result = scrape_all_sources.delay()
     logger.info(f"Scraping task triggered with ID: {result.id}")
-    return result.id 
+    return result.id
+
+def check_and_run_scraping_if_needed():
+    """
+    Check if it's time to run the scraping task, and run it if needed.
+    This should be called when the application starts.
+    """
+    if should_run_task(SCRAPE_TASK_NAME, SCRAPE_INTERVAL_HOURS):
+        logger.info(f"It's been over {SCRAPE_INTERVAL_HOURS} hours since last scraping, running now...")
+        return trigger_scraping()
+    else:
+        logger.info("Not time to scrape yet, skipping...")
+        return None 
